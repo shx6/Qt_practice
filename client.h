@@ -12,7 +12,7 @@ public:
     void connectNetwork(QString,int);
     void receiveMessage();
     void breakConnect();
-    void sendMess(QString,QString);
+    void sendMess(QString,QString,bool);
 
 signals:
     void connectedOK();

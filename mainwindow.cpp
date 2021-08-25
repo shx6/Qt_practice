@@ -23,8 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->localIP->setText(qni->allAddresses()[1].toString());
 
     static int count=0; //  ui->receiveDataCount的计数
-
-
+    static int TXD=0,RXD=0;//发送数据量、接收数据量
 
 
     //初始化
@@ -43,14 +42,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     //客户端连接
     connect(this,&MainWindow::connect_client,clients,&Client::connectNetwork);
-    connect(clients,&Client::connectedOK,this,[=](){
+    connect(clients,&Client::connectedOK,this,[=](){//显示连接报告
         ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ "connect successfully,client  ") ;
         ui->sendButton->setDisabled(0);
         ui->stopButton->setDisabled(0);
         //qDebug()<<QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+"connect successfully,client  ";
     });
     connect(this,&MainWindow::breakClientConnect,clients,&Client::breakConnect);
-    connect(clients,&Client::disconnectOK,this,[=](){
+    connect(clients,&Client::disconnectOK,this,[=](){//显示断开报告
         ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+"connect has been broken.") ;
         qDebug()<<QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+"connect has been broken.";
         t->quit();
@@ -61,9 +60,36 @@ MainWindow::MainWindow(QWidget *parent)
     //
     connect(this,&MainWindow::connect_client,clients,&Client::receiveMessage);
     connect(clients,&Client::sendData,this,[=](QByteArray data){//显示接收的信息
-        ui->receiveMess->setText(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+"client receives message is "+data);
+        RXD+=data.length();
+       // ui->receiveMess->setText(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+"client receives message is "+data);
+        QString temp=ui->receiveMess->toPlainText();
+
+        if(ui->rece16->isChecked()){    //是否16进制的接收
+            temp+=stringToHex(data);
+            ui->receiveMess->setText(temp);
+        }
+        else {
+            temp+=data;
+            ui->receiveMess->setText(temp);
+        }
+
+        if(ui->receiveAndReply->isChecked())    //是否接收数据后启动发送
+        {
+            ui->sendButton->clicked();
+        }
+        //接收数据到达接收缓冲容量时候，清空
+        if (ui->receiveBuffer->text().toInt() > ui->receiveMess->toPlainText().length())
+            ui->receiveMess->clear();
+
     });
-    //connect(clients,&Client::showSendMess,this,[=](QString mess){   });//显示发送信息
+    connect(clients,&Client::showSendMess,this,[=](QString mess){//显示发送信息
+        TXD+=mess.length();
+        ui->TXD->setText(QString( TXD));
+        //显示发送报告
+        if(!ui->closeReport->isChecked())
+            ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString(" :TCP socket  %1 : %2  Send OK!").arg(ui->localIP->text()).arg(ui->localPort->text()));
+
+    });
     connect(this,&MainWindow::sendMessage2Serv,clients,&Client::sendMess);
 
 
@@ -90,9 +116,10 @@ MainWindow::MainWindow(QWidget *parent)
         });
 
         connect(server,&Server::showMess,this,[=](QByteArray data){     //显示收到的信息
+            RXD+=data.length();
 
-            if(ui->rece16->isChecked()){
-                QByteArray temp=toHex(data);
+            if(ui->rece16->isChecked()){    //是否16进制的接收
+                QByteArray temp=stringToHex(data);
                 temp+=ui->receiveMess->toPlainText();
                 ui->receiveMess->append(temp);
             }
@@ -100,19 +127,25 @@ MainWindow::MainWindow(QWidget *parent)
                 ui->receiveMess->setText( data);
             }
 
-            if(ui->receiveAndReply->isChecked())
+            if(ui->receiveAndReply->isChecked())    //是否接收数据后启动发送
             {
                 ui->sendButton->clicked();
             }
+            //接收数据到达接收缓冲容量时候，清空
+            if (ui->receiveBuffer->text().toInt() > ui->receiveMess->toPlainText().length())
+                ui->receiveMess->clear();
         });
         connect(server,&Server::showMess,this,[=](){    //显示报告
-            ui->receiveMess->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString(" :TCP socket  %1 : %2  Send OK!").arg(socket->peerAddress().toString().mid(7)).arg(socket->peerPort()));
-
+            if(!ui->closeReport->isChecked())
+                ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString(" :TCP socket  %1 : %2  Send OK!").arg(socket->peerAddress().toString().mid(7)).arg(socket->peerPort()));
         });
         connect(this,&MainWindow::sendMessage2Serv,server,&Server::send);
-        connect(this,&MainWindow::sendMessage2Serv,this,[=](QString mess){
-            if(ui->workMode->currentText()=="tcp服务器")
-                socket->write(mess.toUtf8());
+        connect(this,&MainWindow::sendMessage2Serv,this,[=](QString mess){//发送消息
+//            if(ui->workMode->currentText()=="tcp服务器")
+//                socket->write(mess.toUtf8());
+
+            TXD+=mess.length();
+            ui->TXD->setText(QString( TXD));
         });
 
 
@@ -246,11 +279,9 @@ void MainWindow::on_sendGap_stateChanged(int arg1)
             emit sendMessage2Serv(mess,ui->workMode->currentText(),isSendHex);
         });
     }
-        else {
-            time->stop();
+    else {
+        time->stop();
         }
-
-
 }
 
 void MainWindow::on_sendReceiveMode_activated(int index)
@@ -270,6 +301,7 @@ void MainWindow::on_sendReceiveMode_activated(int index)
 
         QString currentRunPath =QCoreApplication::applicationDirPath();
         ui->receiveMess->setText(currentRunPath.left(2)+"\\temp\\on.txt");
+        ui->sendMess->setText(currentRunPath.left(2)+"\\temp\\on.txt");
 
     }
     else {
@@ -300,4 +332,27 @@ void MainWindow::on_modifyName_clicked()
 
 void MainWindow::on_receiveAndReply_stateChanged(int arg1)
 {
+}
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    ui->TXD->setText(0);
+    ui->RXD->setText(0);
+    ui->receiveDataCount->setText(0);
+}
+
+void MainWindow::on_receiveFileOrsStop_stateChanged(int arg1)
+{
+    if (arg1==2){
+    QString currentRunPath =QCoreApplication::applicationDirPath();
+
+    QString dirName = QFileDialog::getOpenFileName(this, "open file", currentRunPath);
+    qDebug()<<dirName;
+    ui->receiveMess->setText(dirName);
+    }
+}
+
+void MainWindow::on_clearWindow_clicked()
+{
+    ui->receiveMess->clear();
 }

@@ -18,13 +18,13 @@ void Server::receive()
 
 void Server::send(QString s,QString workmode,bool isSendHex)
 {
-    qDebug()<<"okkkkk";
-    if (!isSendHex)
-        socket->write(s.toUtf8());
-    else {
-        //16进制转换
-        QByteArray str=QByteArray::fromHex(s.toUtf8());
-        socket->write(str);
+    if(workmode=="tcp服务器"){
+        if (!isSendHex)
+            socket->write(s.toUtf8());
+        else {
+            //16进制转换
+            QByteArray str=QByteArray::fromHex(s.toUtf8());
+            socket->write(str);
+        }
     }
-    qDebug()<<"sendadadada";
 }

@@ -10,15 +10,15 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-QByteArray toHex(QString s){
+static QByteArray stringToHex(QString s){
     //bool a;
     QByteArray temp1 = s.toLatin1().toHex();
     QByteArray temp2;
-        for(int i = 0; i < temp1.length()/2;i++)
+    for(int i = 0; i < temp1.length()/2;i++)
         {
             temp2 += temp1.mid(i*2,2) + " ";
         }
-        return  temp2;
+    return  temp2;
 }
 
 
@@ -52,6 +52,12 @@ private slots:
     void on_modifyName_clicked();
 
     void on_receiveAndReply_stateChanged(int arg1);
+
+    void on_pushButton_3_clicked();
+
+    void on_receiveFileOrsStop_stateChanged(int arg1);
+
+    void on_clearWindow_clicked();
 
 signals:
     void connect_client(QString,int);

@@ -37,11 +37,17 @@ void Client::breakConnect()
     sockect->close();
 }
 
-void Client::sendMess(QString message,QString mode)
+void Client::sendMess(QString message,QString mode,bool isHex)
 {
     if(mode=="tcp客户端")
     {
-         sockect->write(message.toUtf8());
          emit showSendMess(message);//show message of client's sending
+         if (!isHex)
+             sockect->write(message.toUtf8());
+         else {
+             //16进制转换
+             QByteArray str=QByteArray::fromHex(message.toUtf8());
+             sockect->write(str);
+         }
 }
 }
