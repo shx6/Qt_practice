@@ -10,6 +10,18 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+QByteArray toHex(QString s){
+    //bool a;
+    QByteArray temp1 = s.toLatin1().toHex();
+    QByteArray temp2;
+        for(int i = 0; i < temp1.length()/2;i++)
+        {
+            temp2 += temp1.mid(i*2,2) + " ";
+        }
+        return  temp2;
+}
+
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -33,10 +45,18 @@ private slots:
 
     void on_advanceSetup_clicked();
 
+    void on_sendGap_stateChanged(int arg1);
+
+    void on_sendReceiveMode_activated(int index);
+
+    void on_modifyName_clicked();
+
+    void on_receiveAndReply_stateChanged(int arg1);
+
 signals:
     void connect_client(QString,int);
     void breakClientConnect();
-    void sendMessage2Serv(QString,QString);
+    void sendMessage2Serv(QString,QString,bool);
 
     //void openSubThread();
 private:

@@ -12,7 +12,7 @@ public:
     explicit Server(QTcpSocket *socket,QObject *parent = nullptr);
 
     void receive();
-    void send(QString);
+    void send(QString,QString ,bool);
 signals:
 
     void showMess(QByteArray);

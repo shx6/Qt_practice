@@ -153,8 +153,8 @@
    <widget class="QLabel" name="label_12">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>500</y>
+      <x>290</x>
+      <y>540</y>
       <width>48</width>
       <height>16</height>
      </rect>
@@ -252,8 +252,8 @@ p, li { white-space: pre-wrap; }
      <rect>
       <x>20</x>
       <y>0</y>
-      <width>231</width>
-      <height>481</height>
+      <width>237</width>
+      <height>581</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -375,10 +375,16 @@ p, li { white-space: pre-wrap; }
           <property name="text">
            <string>十六进制接收</string>
           </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
          </widget>
         </item>
         <item>
          <widget class="QCheckBox" name="receiveFileOrsStop">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>选择接收文件/停止接收</string>
           </property>
@@ -433,7 +439,7 @@ p, li { white-space: pre-wrap; }
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_8">
         <item>
-         <widget class="QCheckBox" name="send16">
+         <widget class="QCheckBox" name="sendHex">
           <property name="text">
            <string>16进制发送</string>
           </property>
@@ -443,41 +449,48 @@ p, li { white-space: pre-wrap; }
          </widget>
         </item>
         <item>
-         <widget class="QWidget" name="widget_2" native="true">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_12">
-           <item>
-            <widget class="QCheckBox" name="checkBox_2">
-             <property name="text">
-              <string>每隔</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="lineEdit_2">
-             <property name="text">
-              <string>100</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_11">
-             <property name="text">
-              <string>毫秒</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBox">
+         <widget class="QCheckBox" name="receiveAndReply">
           <property name="text">
            <string>收到任何数据后启动发送</string>
           </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
          </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_12">
+          <item>
+           <widget class="QCheckBox" name="sendGap">
+            <property name="text">
+             <string>每隔</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="sendGapTime">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>100</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>毫秒</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_10">
@@ -489,7 +502,7 @@ p, li { white-space: pre-wrap; }
            </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="comboBox">
+           <widget class="QComboBox" name="sendReceiveMode">
             <item>
              <property name="text">
               <string>信息模式</string>
@@ -525,7 +538,10 @@ p, li { white-space: pre-wrap; }
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="modifyName">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="text">
              <string>修改发送文件名</string>
             </property>
@@ -637,8 +653,8 @@ p, li { white-space: pre-wrap; }
    <widget class="QLineEdit" name="localIP">
     <property name="geometry">
      <rect>
-      <x>90</x>
-      <y>500</y>
+      <x>340</x>
+      <y>540</y>
       <width>140</width>
       <height>22</height>
      </rect>
@@ -648,6 +664,19 @@ p, li { white-space: pre-wrap; }
       <width>140</width>
       <height>0</height>
      </size>
+    </property>
+   </widget>
+   <widget class="QWidget" name="widget_2" native="true">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>330</y>
+      <width>211</width>
+      <height>40</height>
+     </rect>
     </property>
    </widget>
   </widget>
