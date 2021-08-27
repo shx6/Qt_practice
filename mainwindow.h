@@ -67,9 +67,12 @@ signals:
     void sendMessage2Serv(QString,QString,bool);
     void sendfile(QString,QString);
     //void openSubThread();
+    void clearMemory();
 private:
     Ui::MainWindow *ui;
     QTcpServer *tcpSer;
     advanceSetupDialog *dlg;
+protected:
+    void closeEvent(QCloseEvent *) ;
 };
 #endif // MAINWINDOW_H

@@ -19,6 +19,7 @@ public:
 signals:
 
     void showMess(QByteArray);
+    void showSendFile();
 private:
     QTcpSocket* socket;
 };

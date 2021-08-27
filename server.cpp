@@ -14,20 +14,26 @@ void Server::receive(QString mode)
 
     connect(socket, &QTcpSocket::readyRead, this, [=]()
     {
-        if(mode=="文件模式")
+        if(mode=="信息模式")
         {
             QByteArray data = socket->readAll();
             emit showMess(data);
         }
+
+
     });
 
 }
 
 void Server::send(QString s,QString workmode,bool isSendHex)
 {
+
     if(workmode=="tcp服务器"){
         if (!isSendHex)
+        {
             socket->write(s.toUtf8());
+         }
+
         else {
             //16进制转换
             QByteArray str=QByteArray::fromHex(s.toUtf8());
@@ -38,7 +44,7 @@ void Server::send(QString s,QString workmode,bool isSendHex)
 
 void Server::sendfile(QString path,QString mode)
 {
-    if (mode=="信息模式"){
+    if (mode=="tcp服务器"){
         QFile file(path);
         QFileInfo info(path);
         int fileSize = info.size();
@@ -59,6 +65,7 @@ void Server::sendfile(QString path,QString mode)
 
             socket->write(line);
         }
+        emit showSendFile();
     }
 }
 

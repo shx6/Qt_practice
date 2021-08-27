@@ -11,6 +11,7 @@ Client::Client(QObject *parent) : QObject(parent)
 
 void Client::connectNetwork(QString ip, int port)
 {
+
     sockect=new QTcpSocket;
     sockect->connectToHost(QHostAddress(ip),port);
 

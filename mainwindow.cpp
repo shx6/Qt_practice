@@ -30,13 +30,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     //初始化
 
-    QThread *t = new QThread;
-    QThread *s=new QThread;
+    QThread *t = new QThread(this);
+    QThread *s=new QThread(this);
 
     Client *clients=new Client;
     clients->moveToThread(t);
 
-    tcpSer=new QTcpServer(this);
+    tcpSer=new QTcpServer;
 
 
 
@@ -44,6 +44,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //客户端连接
     connect(this,&MainWindow::connect_client,clients,&Client::connectNetwork);
+
     connect(clients,&Client::connectedOK,this,[=](){//显示连接报告
         ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ "connect successfully,client  ") ;
         ui->sendButton->setDisabled(0);
@@ -54,10 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(clients,&Client::disconnectOK,this,[=](){//显示断开报告
         ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+"connect has been broken.") ;
         qDebug()<<QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+"connect has been broken.";
-        t->quit();
-        t->wait();
-        clients->deleteLater();
-        t->deleteLater();
+
     });
     //
     connect(this,&MainWindow::connect_client,clients,&Client::receiveMessage);
@@ -129,21 +127,21 @@ MainWindow::MainWindow(QWidget *parent)
         connect(socket, &QTcpSocket::disconnected, this, [=]()      //显示断开
         {
             qDebug()<<QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+QString("The NO. 0 TCP socket 127.0.0.1:50464 is accepted!");
-            s->exit();
-            s->wait();
-            s->deleteLater();
+
         });
 
         connect(server,&Server::showMess,this,[=](QByteArray data){     //显示收到的信息
             RXD+=data.length();
+            ui->RXD->setText(QString::number(RXD));
 
             if(ui->rece16->isChecked()){    //是否16进制的接收
                 QByteArray temp=stringToHex(data);
-                temp+=ui->receiveMess->toPlainText();
-                ui->receiveMess->append(temp);
+                QString str=ui->receiveMess->toPlainText()+temp;
+                ui->receiveMess->setText(str);
             }
             else {
-                ui->receiveMess->setText( data);
+                QString str= ui->receiveMess->toPlainText()+data;
+                ui->receiveMess->setText( str);
             }
 
             if(ui->receiveAndReply->isChecked())    //是否接收数据后启动发送
@@ -151,23 +149,29 @@ MainWindow::MainWindow(QWidget *parent)
                 ui->sendButton->clicked();
             }
             //接收数据到达接收缓冲容量时候，清空
-            if (ui->receiveBuffer->text().toInt() > ui->receiveMess->toPlainText().length())
+            if (ui->receiveBuffer->text().toInt() < ui->receiveMess->toPlainText().length())
                 ui->receiveMess->clear();
         });
-        connect(server,&Server::showMess,this,[=](){    //显示报告
+        connect(server,&Server::showMess,this,[=](){    //显示报告,接收完成
             if(!ui->closeReport->isChecked())
-                ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString(" :TCP socket  %1 : %2  Send OK!").arg(socket->peerAddress().toString().mid(7)).arg(socket->peerPort()));
+                ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString(" :TCP rcv from socket  %1:%2 \n").arg(socket->peerAddress().toString().mid(7)).arg(socket->peerPort()));
         });
         connect(this,&MainWindow::sendMessage2Serv,server,&Server::send);
         connect(this,&MainWindow::sendMessage2Serv,this,[=](QString mess){//发送消息
-//            if(ui->workMode->currentText()=="tcp服务器")
-//                socket->write(mess.toUtf8());
+            if(ui->workMode->currentText()=="tcp服务器")
+              // socket->write(mess.toUtf8());
+                ;
+            if(!ui->closeReport->isChecked())
+                ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString(" :TCP socket %1:%2 Send OK! \n").arg(socket->peerAddress().toString().mid(7)).arg(socket->peerPort()));
 
             TXD+=mess.length();
-            ui->TXD->setText(QString( TXD));
+            ui->TXD->setText(QString::number(TXD));
         });
         //发送文件
         connect(this,&MainWindow::sendfile,server,&Server::sendfile);
+        connect(server,&Server::showSendFile,this,[=](){
+            ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+" :Send complete!");
+        });
 
 
 
@@ -187,7 +191,17 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 
+    //clearing memory before closing windows
+    connect(this,&MainWindow::clearMemory,this,[=](){
+        s->exit();
+        s->wait();
+        s->deleteLater();
 
+        t->quit();
+        t->wait();
+        clients->deleteLater();
+        t->deleteLater();
+    });
 }
 
 MainWindow::~MainWindow()
@@ -214,9 +228,9 @@ void MainWindow::on_startButton_clicked()
             ui->destinationPort->setDisabled(1);
             ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString(" : TCP listen at port %1 OK!").arg(ui->localPort->text()));
             //qDebug()<<QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString("TCP listen at port %1 OK!").arg(ui->localPort->text());
-
         }
         ui->startButton->setText("关闭");
+        ui->workMode->setEnabled(0);
     }
     else if (ui->startButton->text()=="关闭") {
         if(ui->workMode->currentText() =="tcp客户端"){
@@ -226,6 +240,8 @@ void MainWindow::on_startButton_clicked()
             tcpSer->close();
         }
         ui->startButton->setText("打开");
+        ui->workMode->setEnabled(1);
+
     }
 
    qDebug()<<ui->workMode->currentText();
@@ -250,7 +266,7 @@ void MainWindow::on_sendButton_clicked()
          emit sendMessage2Serv(mess,ui->workMode->currentText(),isSendHex);
     }
     else if (sendMode=="文件模式") {
-        emit sendfile(ui->sendMess->toPlainText(),sendMode);
+        emit sendfile(ui->sendMess->toPlainText(),workmode);
         qDebug()<<"starting file's sending";
     }
     //ui->sendMess->clear();
@@ -387,4 +403,10 @@ void MainWindow::on_receiveFileOrsStop_stateChanged(int arg1)
 void MainWindow::on_clearWindow_clicked()
 {
     ui->receiveMess->clear();
+}
+
+void MainWindow::closeEvent(QCloseEvent *ev)
+{
+    emit clearMemory();
+    QMainWindow::closeEvent(ev);
 }
