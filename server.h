@@ -11,8 +11,11 @@ class Server : public QObject
 public:
     explicit Server(QTcpSocket *socket,QObject *parent = nullptr);
 
-    void receive();
+    void receive(QString);
     void send(QString,QString ,bool);
+    void sendfile(QString,QString);
+    void receivefile(QString savePath,QString);
+
 signals:
 
     void showMess(QByteArray);

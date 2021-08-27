@@ -13,13 +13,15 @@ public:
     void receiveMessage();
     void breakConnect();
     void sendMess(QString,QString,bool);
+    void sendFile(QString path,QString);
+    void receivefile(QString);
 
 signals:
     void connectedOK();
     void disconnectOK();
     void sendData(QByteArray);
     void showSendMess(QString);
-
+    void sendfileFinish(int);
 
 private:
     QTcpSocket *sockect;

@@ -5,6 +5,7 @@
 #include<QString>
 #include<QThread>
 #include<QTcpServer>
+#include"advancesetupdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -28,6 +29,7 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(QWidget *parent = nullptr);
+
     ~MainWindow();
 
 private slots:
@@ -60,13 +62,14 @@ private slots:
     void on_clearWindow_clicked();
 
 signals:
-    void connect_client(QString,int);
+    void connect_client(QString,int,QString);
     void breakClientConnect();
     void sendMessage2Serv(QString,QString,bool);
-
+    void sendfile(QString,QString);
     //void openSubThread();
 private:
     Ui::MainWindow *ui;
     QTcpServer *tcpSer;
+    advanceSetupDialog *dlg;
 };
 #endif // MAINWINDOW_H

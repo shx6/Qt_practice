@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include"advancesetupdialog.h"
 #include"server.h"
 #include"client.h"
 #include <QDebug>
@@ -10,6 +9,9 @@
 #include<QCoreApplication>
 #include <QFileDialog>
 #include <QMessageBox>
+
+static int count; //  ui->receiveDataCount的计数
+static int TXD,RXD;//发送数据量、接收数据量
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -22,8 +24,8 @@ MainWindow::MainWindow(QWidget *parent)
     //qDebug()<<qni->allAddresses()[1].toString();
     ui->localIP->setText(qni->allAddresses()[1].toString());
 
-    static int count=0; //  ui->receiveDataCount的计数
-    static int TXD=0,RXD=0;//发送数据量、接收数据量
+     count=0; //  ui->receiveDataCount的计数
+     TXD=0,RXD=0;//发送数据量、接收数据量
 
 
     //初始化
@@ -61,36 +63,53 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this,&MainWindow::connect_client,clients,&Client::receiveMessage);
     connect(clients,&Client::sendData,this,[=](QByteArray data){//显示接收的信息
         RXD+=data.length();
+        ui->RXD->setText(QString::number(RXD));
        // ui->receiveMess->setText(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+"client receives message is "+data);
         QString temp=ui->receiveMess->toPlainText();
 
         if(ui->rece16->isChecked()){    //是否16进制的接收
             temp+=stringToHex(data);
-            ui->receiveMess->setText(temp);
         }
         else {
-            temp+=data;
-            ui->receiveMess->setText(temp);
+            temp+=data;            
         }
-
+        ui->receiveMess->setText(temp);
+        qDebug()<<"  "<<temp;
         if(ui->receiveAndReply->isChecked())    //是否接收数据后启动发送
         {
             ui->sendButton->clicked();
         }
         //接收数据到达接收缓冲容量时候，清空
-        if (ui->receiveBuffer->text().toInt() > ui->receiveMess->toPlainText().length())
+        if (ui->receiveBuffer->text().toInt() < ui->receiveMess->toPlainText().length())
+        {
             ui->receiveMess->clear();
+            qDebug()<<"okkkk--------------?????";
+
+        }
+        //打印报告
+        ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString("  :TCP rcv from socket  %1 : %2 ").arg(ui->localIP->text()).arg(ui->localPort->text())+"\n");
+
 
     });
     connect(clients,&Client::showSendMess,this,[=](QString mess){//显示发送信息
         TXD+=mess.length();
-        ui->TXD->setText(QString( TXD));
+        ui->TXD->setText(QString::number(TXD));
         //显示发送报告
         if(!ui->closeReport->isChecked())
-            ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString(" :TCP socket  %1 : %2  Send OK!").arg(ui->localIP->text()).arg(ui->localPort->text()));
+            ui->report->append(QDateTime::currentDateTime().time().toString("hh:mm:ss.zzz")+ QString(" :TCP socket  %1 : %2  Send OK!").arg(ui->localIP->text()).arg(ui->localPort->text())+"\n");
 
     });
     connect(this,&MainWindow::sendMessage2Serv,clients,&Client::sendMess);
+    //发送文件
+    connect(this,&MainWindow::sendfile,clients,&Client::sendFile);
+    connect(clients,&Client::sendfileFinish,this,[=](int percent){
+        //qDebug()<<percent;
+        if (percent>=99)
+            qDebug()<<"file has been send successfully.";
+        else {
+            qDebug()<<"file has been send unsuccessfully.";            }
+    });
+
 
 
 
@@ -147,16 +166,24 @@ MainWindow::MainWindow(QWidget *parent)
             TXD+=mess.length();
             ui->TXD->setText(QString( TXD));
         });
+        //发送文件
+        connect(this,&MainWindow::sendfile,server,&Server::sendfile);
+
 
 
 
         s->start();
-        server->receive();
+        server->receive(ui->sendReceiveMode->currentText());
+        server->receivefile(ui->receiveMess->toPlainText(),ui->sendReceiveMode->currentText());
+
     });
 
 
 
+
     t->start();
+
+    dlg=new advanceSetupDialog(this);
 
 
 
@@ -176,10 +203,7 @@ void MainWindow::on_startButton_clicked()
         QString ip=ui->destinationIP->text();
         int port=ui->destinationPort->text().toInt();
         if(ui->workMode->currentText() =="tcp客户端"){
-            //qDebug()<<"okkkk";
-
-            emit connect_client(ip,port);
-
+            emit connect_client(ip,port,ui->sendReceiveMode->currentText());
         }
         else if (ui->workMode->currentText() == "tcp服务器") {
 
@@ -214,14 +238,21 @@ void MainWindow::on_stopButton_clicked()
 
 void MainWindow::on_sendButton_clicked()
 {
+
     QString mess=ui->sendMess->toPlainText();
     bool isSendHex=ui->sendHex->isChecked();
     bool isSendReply=ui->receiveAndReply->isChecked();
     //bool isSendGap=ui->sendGap->isChecked();
     //int gap = ui->sendGapTime->text().toInt();
+    QString workmode=ui->workMode->currentText();
     QString sendMode=ui->sendReceiveMode->currentText();
-
-    emit sendMessage2Serv(mess,ui->workMode->currentText(),isSendHex);
+    if(sendMode=="信息模式"){
+         emit sendMessage2Serv(mess,ui->workMode->currentText(),isSendHex);
+    }
+    else if (sendMode=="文件模式") {
+        emit sendfile(ui->sendMess->toPlainText(),sendMode);
+        qDebug()<<"starting file's sending";
+    }
     //ui->sendMess->clear();
 }
 
@@ -256,9 +287,9 @@ void MainWindow::on_workMode_activated(int index)
 
 void MainWindow::on_advanceSetup_clicked()
 {
-    advanceSetupDialog *dlg=new advanceSetupDialog(this);
     // 模态, exec()
     // 阻塞程序的执行
+
     dlg->exec();
 }
 
@@ -321,7 +352,7 @@ void MainWindow::on_modifyName_clicked()
 {
     QString currentRunPath =QCoreApplication::applicationDirPath();
 
-    QString dirName = QFileDialog::getOpenFileName(this, "打开目录", currentRunPath);
+    QString dirName = QFileDialog::getOpenFileName(this, "打开文件", currentRunPath);
     //QMessageBox::information(this, "打开目录", "您选择的目录是: " + dirName);
     qDebug()<<dirName;
     ui->sendMess->setText(dirName);
@@ -336,9 +367,10 @@ void MainWindow::on_receiveAndReply_stateChanged(int arg1)
 
 void MainWindow::on_pushButton_3_clicked()
 {
-    ui->TXD->setText(0);
-    ui->RXD->setText(0);
-    ui->receiveDataCount->setText(0);
+    TXD=0,RXD=0;
+    ui->TXD->setText(QString::number(TXD));
+    ui->RXD->setText(QString::number(RXD));
+    ui->receiveDataCount->setText("0");
 }
 
 void MainWindow::on_receiveFileOrsStop_stateChanged(int arg1)
